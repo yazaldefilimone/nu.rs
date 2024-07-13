@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 pub fn resolve_manifest_log(package_name: &str, version: &str) {
   println!("[Resolved manifest...] {}@{}", package_name, version);
 }
