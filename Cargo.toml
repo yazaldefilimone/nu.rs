@@ -2,5 +2,16 @@
 name = "nu"
 version = "0.1.0"
 edition = "2021"
+description = "Rust-based, Fast, lightweight, disk space efficient package manager."
+license = "MIT"
+repository = "https://github.com/yazaldefilimone/nu.rs"
 
 [dependencies]
+clap = { version = "4.5.9", features = ["derive"] }
+reqwest = { version = "0.12.5", features = ["json", "stream"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0.120"
+tokio = { version = "1", features = ["full"] }
+tar = "0.4"
+tokio-tar = "0.2"
+tokio-util = "0.6"
