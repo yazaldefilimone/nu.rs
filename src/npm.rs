@@ -1,39 +1,37 @@
+#![allow(unused)]
+use crate::constants::create_npm_registry_url;
+use crate::logger::{install_package_log, not_found_resolve_package_log};
 use flate2::read::GzDecoder;
-use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::path::Path;
+use std::error::Error;
 use tar::Archive;
 use tokio::fs;
 use tokio::io::AsyncWriteExt;
-use tokio_util::compat::TokioAsyncReadCompatExt;
-
-use crate::constants::create_npm_registry_url;
-use crate::logger::{install_package_log, not_found_resolve_package_log};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct NpmManifest {
-  name: String,
+  pub name: String,
   #[serde(rename = "dist-tags")]
-  dist_tags: NpmManifestDistTags,
-  versions: HashMap<String, NpmManifestVersion>,
+  pub dist_tags: NpmManifestDistTags,
+  pub versions: HashMap<String, NpmManifestVersion>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct NpmManifestDistTags {
-  latest: String,
+  pub latest: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct NpmManifestVersion {
-  dist: NpmManifestVersionDist,
-  dependencies: Option<HashMap<String, String>>,
+  pub dist: NpmManifestVersionDist,
+  pub dependencies: Option<HashMap<String, String>>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct NpmManifestVersionDist {
-  tarball: String,
-  shasum: String,
+  pub tarball: String,
+  pub shasum: String,
 }
 
 pub async fn fetch_package_manifest(package_name: &str) -> Result<NpmManifest, reqwest::Error> {
@@ -43,7 +41,7 @@ pub async fn fetch_package_manifest(package_name: &str) -> Result<NpmManifest, r
   Ok(manifest)
 }
 
-pub async fn download_and_extract_tarball(tar_url: &str, target: &str) -> Result<(), Box<dyn Error>> {
+pub async fn download_and_extract_tarball(tar_url: &str, target: &str) -> Result<(), Box<dyn std::error::Error>> {
   let response = reqwest::get(tar_url).await?;
   let tarball = response.bytes().await?;
 
@@ -57,8 +55,8 @@ pub async fn download_and_extract_tarball(tar_url: &str, target: &str) -> Result
   file.flush().await?;
 
   // Extract the tarball
-  let file = fs::File::open(&temp_tar_path).await?;
-  let reader = GzDecoder::new(file.compat());
+  let file = std::fs::File::open(&temp_tar_path).unwrap();
+  let reader = GzDecoder::new(file);
   let mut archive = Archive::new(reader);
   archive.unpack(target)?;
 
@@ -71,10 +69,13 @@ pub async fn download_and_extract_tarball(tar_url: &str, target: &str) -> Result
 pub async fn resolve_manifest(package_name: &str, version: &str) -> Result<NpmManifestVersion, Box<dyn Error>> {
   let manifest = fetch_package_manifest(package_name).await?;
   if let Some(package_version) = manifest.versions.get(version) {
-    Ok(package_version.clone())
-  } else {
-    Err(not_found_resolve_package_log(version, package_name))
+    return Ok(package_version.clone());
   }
+  not_found_resolve_package_log(package_name, version);
+  Err(Box::new(std::io::Error::new(
+    std::io::ErrorKind::NotFound,
+    "Package not found",
+  )))
 }
 
 pub async fn fetch_package_versions(package_name: &str) -> Result<Vec<String>, reqwest::Error> {
