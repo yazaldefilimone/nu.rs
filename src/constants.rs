@@ -1,6 +1,8 @@
+#![allow(unused)]
+
 use std::{env, path::PathBuf};
 
-pub const NPM_REGISTRY_URL: &str = "https://registry.npmjs.org";
+pub const NPM_REGISTRY_URL: &str = "https://registry.npmjs.org/";
 
 pub fn create_npm_registry_url(package_name: &str) -> String {
   format!("{}{}", NPM_REGISTRY_URL, package_name)
