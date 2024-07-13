@@ -1,17 +1,18 @@
+#![allow(unused)]
+
 use crate::constants::get_package_json_path_buf;
 use serde_json::Value;
 use std::{collections::HashMap, fs, io};
 
-pub type PackageJsonDependencies = HashMap<String, String>;
-pub type PackageJsonDevDependencies = HashMap<String, String>;
+pub type DependenciesMap = HashMap<String, String>;
 
 #[derive(Debug, Clone)]
-pub struct PackageJson {
-  pub dependencies: Option<PackageJsonDependencies>,
-  pub dev_dependencies: Option<PackageJsonDevDependencies>,
+pub struct PackageDependency {
+  pub dependencies: Option<DependenciesMap>,
+  pub dev_dependencies: Option<DependenciesMap>,
 }
 
-pub fn parse_package_json() -> io::Result<PackageJson> {
+pub fn parse_package_json() -> io::Result<PackageDependency> {
   let path_buf = get_package_json_path_buf();
 
   let package_json = fs::read_to_string(path_buf).expect("Failed to read package.json");
@@ -24,10 +25,10 @@ pub fn parse_package_json() -> io::Result<PackageJson> {
 
   let dev_dependencies = dev_dependencies_value.and_then(|d| serde_json::from_value(d.clone()).ok());
 
-  Ok(PackageJson { dependencies, dev_dependencies })
+  Ok(PackageDependency { dependencies, dev_dependencies })
 }
 
-pub fn write_package_json(new_dependencies: PackageJson) -> io::Result<()> {
+pub fn write_package_json(new_dependencies: PackageDependency) -> io::Result<()> {
   let path = get_package_json_path_buf();
   let mut package_json_content = fs::read_to_string(&path).expect("Failed to read package.json");
   let mut json_value: Value = serde_json::from_str(&package_json_content).expect("Failed to deserialize package.json");
